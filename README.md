@@ -13,8 +13,8 @@ Move around in a scrolling cave and avoid falling spikes. Entry for the [raylib 
 
 ## Controls
 There are two control modes: keyboard mode and touch mode. Touch mode also works with the mouse, but keyboard is recommended on PC. You can change the control mode in Options.
-* Press WASD or arrow keys to move around. Going below the map will kill you, and horizontal movement is restricted to the left third of the screen.
-* In touch mode, tapping on the screen will move you to that position. In a way, this is easier than the keyboard controls, so the game is faster to make up for that.
+* Use WASD or arrow keys to move around. Going below the map will kill you.
+* In touch mode, tapping on the screen will move you to that position. In a way, this is easier than keyboard controls, so the game is faster to make up for that.
 * If the level is impossible (the cave is steeper than the player movement speed, shouldn't happen in most cases), you can press R to generate a new level. This will reset your score and lives.
 * Press ESC to go to the main menu.
 * Press B in game to open the debug screen. In touch mode, there is a link in Options.

@@ -651,8 +651,8 @@ void draw_running(void) {
 		if (falltimer > 0) {
 			DrawTexture(
 				falling == F_HEALTH ? health : spike,
-				fallpos.x + GetRandomValue(-3 + difficulty, 3 - difficulty),
-				fallpos.y + GetRandomValue(-1, 1), WHITE
+				fallpos.x + GetRandomValue(-6 + difficulty*2, 6 - difficulty*2),
+				fallpos.y + GetRandomValue(-3 + difficulty, 3 - difficulty), WHITE
 			);
 		} else {
 			DrawTexture(
@@ -671,15 +671,15 @@ void draw_running(void) {
 		gomsgtimer++;
 
 		// note: gomsg render texture is drawn at 2× vertical scale (8×16 character size)
-		// the render texture is WIDTH×8 pixels
+		// the render texture is WIDTH × HEIGHT/2 pixels and drawn at WIDTH × HEIGHT
 		DrawTexturePro(
 			gomsgrt.texture,
 			(Rectangle) {0, 0, WIDTH, -HEIGHT/2},
 			(Rectangle) {
-				-gomsgtimer*5,
-				-gomsgtimer*5,
-				WIDTH + gomsgtimer*10,
-				HEIGHT + gomsgtimer*10
+				-gomsgtimer*7,
+				-gomsgtimer*7,
+				WIDTH + gomsgtimer*14,
+				HEIGHT + gomsgtimer*14
 			},
 			(Vector2) {0, 0}, 0.0f, (Color) {255, 255, 255, 255 - gomsgtimer*3}
 		);

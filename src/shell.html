@@ -31,9 +31,41 @@
     <link rel="shortcut icon" href="favicon.png">
     
     <style>
-		body { background-color: #080A10; margin: 0; font-family: monospace; color: rgba(255,255,255,0.3); }
-        a { color: rgba(255,255,255,0.5); text-decoration: none; }
-        canvas.emscripten { border: 0px none; background-color: black; }
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #080A10;
+            color: rgba(255,255,255,0.3);
+            font-family: monospace;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        canvas.emscripten {
+            background-color: black;
+            display: block;
+        }
+        @media (min-aspect-ratio: 1/1) {
+            canvas.emscripten {
+                height: 100vh;
+                width: auto;
+                margin-left: auto;
+                margin-right: auto;
+            }
+        }
+        @media (max-aspect-ratio: 1/1) {
+            canvas.emscripten {
+                width: 100vw;
+                height: auto;
+                margin-top: auto;
+                margin-bottom: auto;
+            }
+        }
     </style>
     <script type='text/javascript' src="https://cdn.jsdelivr.net/gh/eligrey/FileSaver.js/dist/FileSaver.min.js"> </script>
     <script type='text/javascript'>
@@ -66,6 +98,5 @@
             };
         </script>
         {{{ SCRIPT }}}
-        <p>Click&nbsp;<a onclick="Module.requestFullscreen(false, false)">here</a>&nbsp;to go full screen.</p>
     </body>
 </html>

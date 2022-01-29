@@ -56,6 +56,7 @@ emsdk/
 raylib/
 
 index.html
-index.js
-index.wasm
-index.data
+*.js
+*.wasm
+*.data
+*.zip

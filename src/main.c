@@ -7,10 +7,13 @@
 
 #ifdef PLATFORM_WEB
 	#include <emscripten/emscripten.h>
+	// Save/Load StorageValue don't work on web, these are equivalents using browser's localstorage feature
 	#define save(i, v) emscripten_run_script(TextFormat("localStorage.setItem(\"%d\", %d);", i, v))
 	#define load(i) emscripten_run_script_int(TextFormat("localStorage.getItem(\"%d\");", i))
+#else
+	#define save SaveStorageValue
+	#define load LoadStorageValue
 #endif
-// not gonna support other platforms for now
 
 void init(void);
 void update(void);
@@ -105,6 +108,7 @@ const Color watercolors[DIF_COUNT] = {
 
 bool debug, fancygfx = true;
 int waterlevel = 200, shake, startanim;
+float playerrotation = 0.0f;
 
 #define GOMSGCOUNT 6
 const char *gomsgs[GOMSGCOUNT] = {
@@ -241,6 +245,11 @@ void mainloop(void) {
 			),
 			180*SCALE, 0, YELLOW
 		);
+	}
+
+	if (state != ST_DEATHANIM) {
+		if (playerrotation > 0) playerrotation--;
+		else if (playerrotation < 0) playerrotation++;
 	}
 
 	EndDrawing();
@@ -452,6 +461,7 @@ void start(bool resetscore) {
 	worldinit();
 	player.x = 0;
 	player.y = world[0][0] + space/2;
+	playerrotation = 0.0f;
 	falling = F_NONE;
 	falldelay = GetRandomValue(MINFALLDELAY, MAXFALLDELAY);
 	PlaySound(countdown);
@@ -585,7 +595,9 @@ void update_running(void) {
 			if (falling != F_HEALTH && difficulty != DIF_HARD) PlaySound(spikedrop);
 
 			fallpos.x = GetRandomValue(14, 160);
-			fallpos.y = 0;
+
+			// Make sure the entire spike/health is on screen even when it's shaking
+			fallpos.y = 4 - difficulty;
 
 			// Spikes will usually fall close to the player (more likely on harder difficulties)
 			if (falling != F_HEALTH && GetRandomValue(1, 4 + difficulty) != 1)
@@ -619,11 +631,13 @@ void update_running(void) {
 	if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) {
 		player.x -= speed*GetFrameTime();
 		if (player.x < 0) player.x = 6;
+		else playerrotation = -6;
 	}
 
 	if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)) {
 		player.x += speed*GetFrameTime();
 		if (player.x > WIDTH - 16) player.x = WIDTH - 22;
+		else playerrotation = 6;
 	}
 
 	if (touchmode) {
@@ -662,7 +676,10 @@ void draw_running(void) {
 		}
 	}
 
-	DrawTexture(playertex[difficulty], player.x, player.y, WHITE);
+	if (fancygfx)
+		DrawTextureEx(playertex[difficulty], (Vector2) {player.x, player.y}, playerrotation, 1.0f, WHITE);
+	else DrawTexture(playertex[difficulty], player.x, player.y, WHITE);
+
 	drawtext(TextFormat("SCORE:%.5d   LIVES:%d", score, lives), 36, HEIGHT - 16, ((Color) {255, 192, 0, 255}));
 
 	// draw gomsg ("GO!" text when the game starts) in the middle of the screen,
@@ -696,6 +713,7 @@ void update_deathanim(void) {
 	if (lives < 0) lives = 0;
 	player.y += 3;
 	if ((int) player.y % 2 == 0) player.x++;
+	playerrotation += 3;
 	if (player.y > HEIGHT) {
 		if (lives > 0) start(false);
 		else state = ST_GAMEOVER;

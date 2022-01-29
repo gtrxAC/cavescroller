@@ -30,4 +30,5 @@ Currently only web building from Linux is supported, but it shouldn't be too har
 
 ## Credits
 * Font: [IBM PC BIOS 8×8](https://int10h.org/oldschool-pc-fonts/fontlist/font?ibm_bios), (c) 2016-2020 VileR
+* CSS: [mandar1jn/planet-clash](https://github.com/mandar1jn/planet-clash/blob/main/src/minshell.html#L33)
 * Everything else made by me using [GIMP](https://www.gimp.org/), [mtPaint](http://mtpaint.sourceforge.net) and [rFXGen](https://raylibtech.itch.io/rfxgen).

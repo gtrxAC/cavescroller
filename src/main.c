@@ -37,7 +37,7 @@ void worldinit(void);
 
 //                 easy norm hard
 const int speeds[]    = {115, 135, 145};  // speed is how fast WASD moves the player, not the scroll speed
-const int minspaces[] = {80,  80,  75};   // min amount of empty space, below 75 is very hard
+const int minspaces[] = {80,  78,  75};   // min amount of empty space, below 75 is very hard
 const int maxspaces[] = {110, 95,  90};   // max (starting) amount of empty space, decreases every SPACEDEC frames until minspace
 const int mindeltas[] = {6,   6,   7};    // minimum (starting) delta (how steep and rough the cave is), increases every DELTAINC frames
 const int maxdeltas[] = {7,   8,   8};    // maximum delta, anything above 9 is quite unplayable
@@ -239,7 +239,7 @@ void mainloop(void) {
 				GetFPS(), delta, space, world[0][0], INPUTX, INPUTY,
 				IsMouseButtonDown(MOUSE_BUTTON_LEFT)
 			),
-			80*SCALE, 0, YELLOW
+			180*SCALE, 0, YELLOW
 		);
 	}
 
@@ -574,29 +574,29 @@ void update_running(void) {
 	} else {
 		falldelay--;
 		if (falldelay < 1) {
-			// 1 in 7 chance to be health, 1 in 6 in hard mode
-			// (to make up for delta being very high)
-			falling = GetRandomValue(F_SPIKE + (difficulty == DIF_HARD), F_HEALTH);
+			// 1 in 7 chance to be health
+			falling = GetRandomValue(F_SPIKE, F_HEALTH);
 
 			// don't drop health if we don't need it
+			// note: maxlives is 1 in hard mode so health never appears
 			if (lives == MAXLIVES) falling = F_SPIKE;
 
 			// play a crumbling sound for spikes (not in hard mode so they're a bit harder to spot)
 			if (falling != F_HEALTH && difficulty != DIF_HARD) PlaySound(spikedrop);
 
-			fallpos.x = GetRandomValue(0, 64);
+			fallpos.x = GetRandomValue(14, 160);
 			fallpos.y = 0;
 
 			// Spikes will usually fall close to the player (more likely on harder difficulties)
-			if (falling != F_HEALTH && GetRandomValue(1, 3 + difficulty) != 1)
-				fallpos.x = player.x + GetRandomValue(-16, 16);
+			if (falling != F_HEALTH && GetRandomValue(1, 4 + difficulty) != 1)
+				fallpos.x = player.x + GetRandomValue(-15, 15);
 
 			// Falling object must be on screen though, you don't want to die to
 			// a spike that had only 1 pixel visible
 			if (fallpos.x < 0) fallpos.x = 0;
 
-			// Shake for 50/40/30 frames before dropping
-			falltimer = 50 - 10*difficulty;
+			// Shake for 45/35/25 frames before dropping
+			falltimer = 45 - 10*difficulty;
 		}
 	}
 
@@ -623,14 +623,14 @@ void update_running(void) {
 
 	if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)) {
 		player.x += speed*GetFrameTime();
-		if (player.x > 80) player.x = 74;
+		if (player.x > WIDTH - 16) player.x = WIDTH - 22;
 	}
 
 	if (touchmode) {
 		player.x = INPUTX - player.width/2;
 		player.y = INPUTY - player.height/2;
 		if (player.x < 0) player.x = 6;
-		if (player.x > 80) player.x = 74;
+		if (player.x > WIDTH - 16) player.x = WIDTH - 22;
 		if (player.y < 0) die(false);
 		if (player.y + player.height >= HEIGHT) die(true);
 	}

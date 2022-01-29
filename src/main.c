@@ -40,10 +40,10 @@ void worldinit(void);
 
 //                 easy norm hard
 const int speeds[]    = {115, 135, 145};  // speed is how fast WASD moves the player, not the scroll speed
-const int minspaces[] = {80,  78,  75};   // min amount of empty space, below 75 is very hard
+const int minspaces[] = {82,  78,  75};   // min amount of empty space, below 75 is very hard
 const int maxspaces[] = {110, 95,  90};   // max (starting) amount of empty space, decreases every SPACEDEC frames until minspace
 const int mindeltas[] = {6,   6,   7};    // minimum (starting) delta (how steep and rough the cave is), increases every DELTAINC frames
-const int maxdeltas[] = {7,   8,   8};    // maximum delta, anything above 9 is quite unplayable
+const int maxdeltas[] = {8,   8,   8};    // maximum delta, anything above 9 is quite unplayable
 #define SPACEDEC 300
 #define DELTAINC 3000
 #define TITLEDELTA 12
@@ -493,18 +493,19 @@ void drawworld(void) {
 		DrawRectangle(i*BLOCKSIZE, world[i][0] + space, BLOCKSIZE, HEIGHT, wallcolor);
 
 		if (fancygfx) {
-			DrawRectangle(i*BLOCKSIZE, 0, BLOCKSIZE, world[i][0] - 60, (Color) {0, 0, 0, 32});
-			DrawRectangle(i*BLOCKSIZE, 0, BLOCKSIZE, world[i][0] - 100, (Color) {0, 0, 0, 40});
-			DrawRectangle(i*BLOCKSIZE, 0, BLOCKSIZE, world[i][0] - 120, (Color) {0, 0, 0, 64});
+			DrawRectangle(i*BLOCKSIZE, 0, BLOCKSIZE, world[i][0] - 50, (Color) {0, 0, 0, 27});
+			DrawRectangle(i*BLOCKSIZE, 0, BLOCKSIZE, world[i][0] - 120, (Color) {0, 0, 0, 35});
+			DrawRectangle(i*BLOCKSIZE, 0, BLOCKSIZE, world[i][0] - 140, (Color) {0, 0, 0, 56});
 
-			DrawRectangle(i*BLOCKSIZE, world[i][0] + space + 80, BLOCKSIZE, HEIGHT, (Color) {0, 0, 0, 32});
-			DrawRectangle(i*BLOCKSIZE, world[i][0] + space + 140, BLOCKSIZE, HEIGHT, (Color) {0, 0, 0, 40});
-			DrawRectangle(i*BLOCKSIZE, world[i][0] + space + 160, BLOCKSIZE, HEIGHT, (Color) {0, 0, 0, 64});
+			DrawRectangle(i*BLOCKSIZE, world[i][0] + space + 30, BLOCKSIZE, HEIGHT, (Color) {0, 0, 0, 32});
+			DrawRectangle(i*BLOCKSIZE, world[i][0] + space + 80, BLOCKSIZE, HEIGHT, (Color) {0, 0, 0, 40});
+			DrawRectangle(i*BLOCKSIZE, world[i][0] + space + 100, BLOCKSIZE, HEIGHT, (Color) {0, 0, 0, 64});
 		}
 	}
 }
 
-void drawgomsg(const char *msg) {
+// gomsg is drawn at the end of draw_running
+void setgomsg(const char *msg) {
 	gomsg = msg;
 	gomsgtimer = 0;
 	BeginTextureMode(gomsgrt);
@@ -621,11 +622,13 @@ void update_running(void) {
 	if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)) {
 		player.y -= speed*GetFrameTime();
 		if (player.y < 0) player.y = 6;
+		else playerrotation = -3;
 	}
 
 	if (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN)) {
 		player.y += speed*GetFrameTime();
 		if (player.y + player.height >= HEIGHT) die(true);
+		else playerrotation = 3;
 	}
 
 	if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) {
@@ -649,10 +652,10 @@ void update_running(void) {
 		if (player.y + player.height >= HEIGHT) die(true);
 	}
 
-	if (IsKeyPressed(KEY_T)) drawgomsg("trolled!!11");  // yes
+	if (IsKeyPressed(KEY_T)) setgomsg("trolled!!11");  // yes
 
 	score++;
-	if (score == hiscores[difficulty] + 1 && score > 1) drawgomsg("NEW BEST");
+	if (score == hiscores[difficulty] + 1 && score > 1) setgomsg("NEW BEST");
 
 	if (score % SPACEDEC == 0 && space > minspace) space--;
 	if (score % DELTAINC == 0 && delta < maxdelta) delta++;
@@ -693,10 +696,10 @@ void draw_running(void) {
 			gomsgrt.texture,
 			(Rectangle) {0, 0, WIDTH, -HEIGHT/2},
 			(Rectangle) {
-				-gomsgtimer*7,
-				-gomsgtimer*7,
-				WIDTH + gomsgtimer*14,
-				HEIGHT + gomsgtimer*14
+				-gomsgtimer*6,
+				-gomsgtimer*6,
+				WIDTH + gomsgtimer*12,
+				HEIGHT + gomsgtimer*12
 			},
 			(Vector2) {0, 0}, 0.0f, (Color) {255, 255, 255, 255 - gomsgtimer*3}
 		);
@@ -831,7 +834,7 @@ void draw_options(void) {
 void update_starting(void) {
 	starttimer--;
 	if (starttimer < 1) {
-		drawgomsg(gomsgs[GetRandomValue(0, GOMSGCOUNT - 1)]);
+		setgomsg(gomsgs[GetRandomValue(0, GOMSGCOUNT - 1)]);
 		state = ST_RUNNING;
 	}
 }

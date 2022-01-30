@@ -6,7 +6,7 @@ Move around in a scrolling cave and avoid falling spikes. Entry for the [raylib 
 ![](branding/screenshots.png)
 
 ## Gameplay
-* Runs on Web (PC and Mobile)
+* Runs on Linux and Web (PC and Mobile)
 * Avoid hitting falling spikes and the cave walls
 * The cave gets harder to move around in as you progress
 * 3 difficulty levels

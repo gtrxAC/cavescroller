@@ -54,7 +54,10 @@ dkms.conf
 .vscode/
 emsdk/
 raylib/
+lib/
 
+cavescroller
+cavescroller.exe
 index.html
 *.js
 *.wasm

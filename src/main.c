@@ -38,7 +38,7 @@ void worldinit(void);
 // _____________________________________________________________________________
 //
 
-//                 easy norm hard
+//                       easy norm hard
 const int speeds[]    = {115, 135, 145};  // speed is how fast WASD moves the player, not the scroll speed
 const int minspaces[] = {82,  78,  75};   // min amount of empty space, below 75 is very hard
 const int maxspaces[] = {110, 95,  90};   // max (starting) amount of empty space, decreases every SPACEDEC frames until minspace
@@ -90,7 +90,7 @@ Rectangle fallpos = {0, 0, 16, 16};
 
 RenderTexture rt;
 Texture buttons[3], playertex[DIF_COUNT], title, gameover, spike, health, scanline;
-Sound death, splash, select, healthsound, spikedrop, spikefall, countdown;
+Sound death, splash, selectsound, healthsound, spikedrop, spikefall, countdown;
 Font font;
 #define FONTSIZE 8
 
@@ -175,7 +175,8 @@ int main() {
 	mindelta = mindeltas[difficulty];
 	maxdelta = maxdeltas[difficulty];
 
-	InitWindow(WIDTH*SCALE, HEIGHT*SCALE, "game");
+	InitWindow(WIDTH*SCALE, HEIGHT*SCALE, "CaveScroller");
+	SetExitKey(0);
 	
 	rt = LoadRenderTexture(WIDTH, HEIGHT);
 	gomsgrt = LoadRenderTexture(WIDTH, HEIGHT/2);
@@ -367,7 +368,7 @@ void init(void) {
 	scanline = LoadTexture("assets/scanline.png");
 
 	death = LoadSound("assets/death.wav");
-	select = LoadSound("assets/select.wav");
+	selectsound = LoadSound("assets/select.wav");
 	healthsound = LoadSound("assets/health.wav");
 	spikedrop = LoadSound("assets/spikedrop.wav");
 	spikefall = LoadSound("assets/spikefall.wav");
@@ -538,7 +539,7 @@ void draw_title(void) {
 	if (button(170, "Options", WHITE) || IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) {
 		hiscoreloaded = false;
 		state = ST_OPTIONS;
-		PlaySound(select);
+		PlaySound(selectsound);
 	}
 }
 
@@ -743,7 +744,7 @@ void draw_gameover(void) {
 		space = TITLESPACE;
 		delta = TITLEDELTA;
 		worldinit();
-		PlaySound(select);
+		PlaySound(selectsound);
 	}
 }
 
@@ -777,7 +778,7 @@ void draw_options(void) {
 	const char *difstrings[] = {"Difficulty: EASY", "Difficulty: NORMAL", "Difficulty: HARD"};
 
 	if (button(80, customdif ? "Difficulty: CUSTOM" : difstrings[difficulty], WHITE)) {
-		PlaySound(select);
+		PlaySound(selectsound);
 		customdif = false;
 		difficulty++;
 		if (difficulty > DIF_HARD) difficulty = DIF_EASY;
@@ -792,14 +793,14 @@ void draw_options(void) {
 	if (button(112, touchmode ? "Touch mode: ON" : "Touch mode: OFF", WHITE)) {
 		touchmode = !touchmode;
 		worldinit();
-		PlaySound(select);
+		PlaySound(selectsound);
 	}
 
 	const char *gfxstrings[] = {"Graphics: LOW", "Graphics: HIGH"};
 
 	if (button(144, gfxstrings[fancygfx], WHITE)) {
 		fancygfx = !fancygfx;
-		PlaySound(select);
+		PlaySound(selectsound);
 	}
 
 	if (button(176, "Back", WHITE)) {
@@ -807,7 +808,7 @@ void draw_options(void) {
 		space = TITLESPACE;
 		delta = TITLEDELTA;
 		worldinit();
-		PlaySound(select);
+		PlaySound(selectsound);
 	}
 
 	if (link(72, 216, "Clear scores", (Color) {80, 64, 255, 255})) {

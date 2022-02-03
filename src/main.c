@@ -15,22 +15,22 @@
 	#define load LoadStorageValue
 #endif
 
+void mainloop(void);
 void init(void);
 void update(void);
 void draw(void);
-void mainloop(void);
-void update_title(void);
-void update_running(void);
-void draw_gameover(void);
-void draw_title(void);
-void draw_running(void);
-void update_deathanim(void);
-void draw_options(void);
-void update_options(void);
-void draw_starting(void);
-void update_starting(void);
 void start(bool resetscore);
 void worldinit(void);
+void update_title(void);
+void draw_title(void);
+void update_running(void);
+void draw_running(void);
+void draw_gameover(void);
+void update_deathanim(void);
+void update_options(void);
+void draw_options(void);
+void update_starting(void);
+void draw_starting(void);
 
 // _____________________________________________________________________________
 //
@@ -62,7 +62,6 @@ enum {
 	DIF_HARD,
 	DIF_COUNT
 } difficulty = DIF_NORMAL;
-bool customdif = false;
 
 enum {
 	F_NONE,
@@ -124,6 +123,11 @@ const char *gomsg;
 RenderTexture gomsgrt;
 int gomsgtimer;
 
+#define LINKCOLOR ((Color) {80, 64, 255, 255})
+#define GXYELLOW ((Color) {255, 192, 0, 255})
+#define GXCYAN ((Color) {0, 255, 255, 255})
+#define GAMEOVERBUTTON ((Color) {255, 160, 160, 255})
+
 // _____________________________________________________________________________
 //
 //  Other variables and defines
@@ -133,13 +137,14 @@ int gomsgtimer;
 bool touchmode;
 
 int hiscores[DIF_COUNT];
-bool gothiscore;  // was a high score achieved last game? used in gameover screen
+bool gothiscore;     // was a high score achieved last game? used in gameover screen
 bool hiscoreloaded;  // high scores are loaded only once from the savefile,
                      // this is a flag to prevent loading save file every frame
 
 int world[WIDTH/3][2]; // [0] is height, [1] is color tint (higher = darker)
                        // we use width/3 instead of width/blocksize because
-					   // blocksize depends on control mode
+                       // blocksize depends on control mode
+
 #define BLOCKSIZE (3 + touchmode)       // the map scrolls one block per frame, so higher blocksize is faster
 #define WORLDSIZE (WIDTH/BLOCKSIZE)
 
@@ -153,11 +158,12 @@ enum {
 } state = ST_TITLE;
 
 // Draw text with custom font and shadow
-#define drawtext(text, x, y, color) \
+#define drawtext(text, x, y, color) {\
 	DrawTextEx(font, text, (Vector2) {x + 1, y}, FONTSIZE, 0, BLACK); \
 	DrawTextEx(font, text, (Vector2) {x, y + 1}, FONTSIZE, 0, BLACK); \
 	DrawTextEx(font, text, (Vector2) {x + 1, y + 1}, FONTSIZE, 0, BLACK); \
 	DrawTextEx(font, text, (Vector2) {x, y}, FONTSIZE, 0, color); \
+}
 
 #define INPUTX (GetTouchX()/SCALE)  // GetTouchX also works for mouse, but doesn't work with SetMouseScale
 #define INPUTY (GetTouchY()/SCALE)
@@ -176,6 +182,8 @@ int main() {
 	maxdelta = maxdeltas[difficulty];
 
 	InitWindow(WIDTH*SCALE, HEIGHT*SCALE, "CaveScroller");
+
+	// ESC is used to go to the main menu, so unbind it from exiting the game
 	SetExitKey(0);
 	
 	rt = LoadRenderTexture(WIDTH, HEIGHT);
@@ -191,6 +199,7 @@ int main() {
 		while (!WindowShouldClose()) mainloop();
 	#endif
 
+	CloseAudioDevice();
 	CloseWindow();
 	return 0;
 }
@@ -357,9 +366,9 @@ void init(void) {
 	buttons[0] = LoadTexture("assets/button0.png");
 	buttons[1] = LoadTexture("assets/button1.png");
 	buttons[2] = LoadTexture("assets/button2.png");
-	playertex[0] = LoadTexture("assets/playereasy.png");
-	playertex[1] = LoadTexture("assets/player.png");
-	playertex[2] = LoadTexture("assets/playerhard.png");
+	playertex[DIF_EASY] = LoadTexture("assets/playereasy.png");
+	playertex[DIF_NORMAL] = LoadTexture("assets/player.png");
+	playertex[DIF_HARD] = LoadTexture("assets/playerhard.png");
 
 	title = LoadTexture("assets/title.png");
 	gameover = LoadTexture("assets/gameover.png");
@@ -375,7 +384,7 @@ void init(void) {
 	splash = LoadSound("assets/splash.wav");
 	countdown = LoadSound("assets/countdown.wav");
 
-	font = LoadFontEx("assets/font.ttf", 64, NULL, 0);
+	font = LoadFontEx("assets/font.ttf", 8, NULL, 0);
 
 	space = TITLESPACE;
 	delta = TITLEDELTA;
@@ -511,7 +520,7 @@ void setgomsg(const char *msg) {
 	gomsgtimer = 0;
 	BeginTextureMode(gomsgrt);
 	ClearBackground(BLANK);
-	drawtext(gomsg, WIDTH/2 - strlen(gomsg)*FONTSIZE/2, HEIGHT/4 - FONTSIZE/2, ((Color) {0, 255, 255, 255}));
+	drawtext(gomsg, WIDTH/2 - strlen(gomsg)*FONTSIZE/2, HEIGHT/4 - FONTSIZE/2, GXCYAN);
 	EndTextureMode();
 }
 
@@ -684,7 +693,7 @@ void draw_running(void) {
 		DrawTextureEx(playertex[difficulty], (Vector2) {player.x, player.y}, playerrotation, 1.0f, WHITE);
 	else DrawTexture(playertex[difficulty], player.x, player.y, WHITE);
 
-	drawtext(TextFormat("SCORE:%.5d   LIVES:%d", score, lives), 36, HEIGHT - 16, ((Color) {255, 192, 0, 255}));
+	drawtext(TextFormat("SCORE:%.5d   LIVES:%d", score, lives), 36, HEIGHT - 16, (GXYELLOW));
 
 	// draw gomsg ("GO!" text when the game starts) in the middle of the screen,
 	// for 80 frames, with increasing size and decreasing opacity
@@ -731,15 +740,15 @@ void draw_gameover(void) {
 	drawtext(TextFormat("Your score: %.5d", score), 52, 112, WHITE);
 	drawtext(TextFormat("High score: %.5d", hiscores[difficulty]), 52, 120, WHITE);
 	if (gothiscore) {
-		drawtext("NEW", 196, 120, ((Color) {255, 192, 0, 255}));
+		drawtext("NEW", 196, 120, GXYELLOW);
 	}
 
-	if (button(144, "Retry", (Color) {255, 160, 160, 255}) || IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) {
+	if (button(144, "Retry", GAMEOVERBUTTON) || IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) {
 		start(true);
 		// don't play select sound because then it will overlap with the countdown sound
 	}
 
-	if (button(186, "Title", (Color) {255, 160, 160, 255}) || IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) {
+	if (button(186, "Title", GAMEOVERBUTTON) || IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) {
 		state = ST_TITLE;
 		space = TITLESPACE;
 		delta = TITLEDELTA;
@@ -770,16 +779,15 @@ void draw_options(void) {
 	drawtext("air in the cave, as well as", WIDTH/2 - 108, 16, WHITE);
 	drawtext("the player speed", WIDTH/2 - 64, 24, WHITE);
 
-	drawtext("HIGH SCORES", WIDTH/2 - 44, 40, ((Color) {255, 192, 0, 255}));
+	drawtext("HIGH SCORES", WIDTH/2 - 44, 40, GXYELLOW);
 	drawtext(TextFormat("EASY:   %.5d", hiscores[DIF_EASY]), WIDTH/2 - 52, 48, ((Color) {0, 255, 64, 255}));
-	drawtext(TextFormat("NORMAL: %.5d", hiscores[DIF_NORMAL]), WIDTH/2 - 52, 56, ((Color) {255, 192, 0, 255}));
+	drawtext(TextFormat("NORMAL: %.5d", hiscores[DIF_NORMAL]), WIDTH/2 - 52, 56, GXYELLOW);
 	drawtext(TextFormat("HARD:   %.5d", hiscores[DIF_HARD]), WIDTH/2 - 52, 64, ((Color) {255, 0, 48, 255}));
 
 	const char *difstrings[] = {"Difficulty: EASY", "Difficulty: NORMAL", "Difficulty: HARD"};
 
-	if (button(80, customdif ? "Difficulty: CUSTOM" : difstrings[difficulty], WHITE)) {
+	if (button(80, difstrings[difficulty], WHITE)) {
 		PlaySound(selectsound);
-		customdif = false;
 		difficulty++;
 		if (difficulty > DIF_HARD) difficulty = DIF_EASY;
 
@@ -811,18 +819,30 @@ void draw_options(void) {
 		PlaySound(selectsound);
 	}
 
-	if (link(72, 216, "Clear scores", (Color) {80, 64, 255, 255})) {
+	if (link(0, 224, "Copy scores", LINKCOLOR)) {
+		const char *str = TextFormat(
+			"My CaveScroller high scores\nEASY: %.5d\nNORMAL: %.5d\nHARD: %.5d",
+			hiscores[DIF_EASY], hiscores[DIF_NORMAL], hiscores[DIF_HARD]
+		);
+
+		#ifdef PLATFORM_WEB
+			emscripten_run_script(TextFormat("navigator.clipboard.writeText(`%s`); alert('Copied!');", str));
+		#else
+			SetClipboardText(str); printf("Copied scores to clipboard!\n");
+		#endif
+	}
+	drawtext("___________", 0, 226, LINKCOLOR);
+
+	if (link(96, 224, "Clear scores", LINKCOLOR)) {
 		save(DIF_EASY, 0); hiscores[DIF_EASY] = 0;
 		save(DIF_NORMAL, 0); hiscores[DIF_NORMAL] = 0;
 		save(DIF_HARD, 0); hiscores[DIF_HARD] = 0;
 	}
-
-	// underline for link
-	drawtext("____________", 72, 218, ((Color) {80, 64, 255, 255}));
+	drawtext("____________", 96, 226, LINKCOLOR);
 
 	if (touchmode) {
-		if (link(0, 224, "Debug", (Color) {80, 64, 255, 255})) debug = !debug;
-		drawtext("_____", 0, 226, ((Color) {80, 64, 255, 255}));
+		if (link(200, 224, "Debug", LINKCOLOR)) debug = !debug;
+		drawtext("_____", 200, 226, LINKCOLOR);
 	}
 }
 
@@ -845,6 +865,6 @@ void draw_starting(void) {
 	DrawTexture(playertex[difficulty], player.x, player.y, WHITE);
 	drawtext(
 		TextFormat("%d", (int) starttimer/30 + 1),
-		WIDTH/2 - 5, HEIGHT/2 - 55, ((Color) {0, 255, 255, 255})
+		WIDTH/2 - 5, HEIGHT/2 - 55, GXCYAN
 	);
 }

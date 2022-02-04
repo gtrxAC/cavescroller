@@ -1,6 +1,7 @@
 #include "raylib.h"
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #define WIDTH 240
 #define HEIGHT 240
 #define SCALE 3
@@ -39,7 +40,7 @@ void draw_starting(void);
 //
 
 //                       easy norm hard
-const int speeds[]    = {115, 135, 145};  // speed is how fast WASD moves the player, not the scroll speed
+const int speeds[]    = {115, 135, 145};  // speed is how fast WASD moves the player, not the scroll speed (pixels per second)
 const int minspaces[] = {82,  78,  75};   // min amount of empty space, below 75 is very hard
 const int maxspaces[] = {110, 95,  90};   // max (starting) amount of empty space, decreases every SPACEDEC frames until minspace
 const int mindeltas[] = {6,   6,   7};    // minimum (starting) delta (how steep and rough the cave is), increases every DELTAINC frames
@@ -77,8 +78,8 @@ enum {
 int falldelay;
 int falltimer;
 Rectangle fallpos = {0, 0, 16, 16};
-#define FALLSPEED 300     // how fast spikes and health packs fall
-#define MINFALLDELAY 150  // min/max amount of time between spike/health drops
+#define FALLSPEED 300     // how fast spikes and health packs fall (pixels per second)
+#define MINFALLDELAY 100  // min/max amount of time between spike/health drops
 #define MAXFALLDELAY (700 - 50*difficulty)
 
 // _____________________________________________________________________________
@@ -93,6 +94,10 @@ Sound death, splash, selectsound, healthsound, spikedrop, spikefall, countdown;
 Font font;
 #define FONTSIZE 8
 
+#ifdef PLATFORM_DESKTOP
+	Image icon;
+#endif
+
 const Color wallcolors[DIF_COUNT] = {
 	(Color) {192, 176, 144, 255},  // easy
 	(Color) {96, 112, 128, 255},   // normal
@@ -106,8 +111,10 @@ const Color watercolors[DIF_COUNT] = {
 };
 
 bool debug, fancygfx = true;
-int waterlevel = 200, shake, startanim;
+float waterlevel = 190;
+int shake, startanim;
 float playerrotation = 0.0f;
+unsigned int framecount;
 
 #define GOMSGCOUNT 6
 const char *gomsgs[GOMSGCOUNT] = {
@@ -145,7 +152,7 @@ int world[WIDTH/3][2]; // [0] is height, [1] is color tint (higher = darker)
                        // we use width/3 instead of width/blocksize because
                        // blocksize depends on control mode
 
-#define BLOCKSIZE (3 + touchmode)       // the map scrolls one block per frame, so higher blocksize is faster
+#define BLOCKSIZE (3 + touchmode)    // the map scrolls one block per frame, so higher blocksize is faster
 #define WORLDSIZE (WIDTH/BLOCKSIZE)
 
 enum {
@@ -182,6 +189,13 @@ int main() {
 	maxdelta = maxdeltas[difficulty];
 
 	InitWindow(WIDTH*SCALE, HEIGHT*SCALE, "CaveScroller");
+
+	#ifdef PLATFORM_DESKTOP
+		icon = LoadImage("assets/icon.png");
+		ImageFormat(&icon, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+		SetWindowIcon(icon);
+		UnloadImage(icon);
+	#endif
 
 	// ESC is used to go to the main menu, so unbind it from exiting the game
 	SetExitKey(0);
@@ -247,14 +261,16 @@ void mainloop(void) {
 	}
 
 	if (debug) {
-		drawtext(
+		DrawText(
 			TextFormat(
-				"fps %d\ndelta %d\nspace %d\nworld[0] %d\ntouch %d,%d\ntouched %d",
+				"fps %d\ndelta %d\nspace %d\nworld[0] %d\ntouch %d,%d\ntouched %d\nwater %f",
 				GetFPS(), delta, space, world[0][0], INPUTX, INPUTY,
-				IsMouseButtonDown(MOUSE_BUTTON_LEFT)
+				IsMouseButtonDown(MOUSE_BUTTON_LEFT), waterlevel
 			),
-			180*SCALE, 0, YELLOW
+			180*SCALE, 0, 10, YELLOW
 		);
+
+		DrawLine(0, waterlevel*SCALE, WIDTH*SCALE, waterlevel*SCALE, GXCYAN);
 	}
 
 	if (state != ST_DEATHANIM) {
@@ -263,6 +279,7 @@ void mainloop(void) {
 	}
 
 	EndDrawing();
+	framecount++;
 }
 
 // _____________________________________________________________________________
@@ -478,11 +495,7 @@ void start(bool resetscore) {
 }
 
 void watershift(void) {
-	if (fancygfx) {
-		waterlevel += GetRandomValue(-1, 1);
-		if (waterlevel > 210) waterlevel = 210;
-		if (waterlevel < 185) waterlevel = 185;
-	}
+	if (fancygfx) waterlevel += sin(framecount / 8) / 2;
 }
 
 void drawworld(void) {
@@ -804,9 +817,9 @@ void draw_options(void) {
 		PlaySound(selectsound);
 	}
 
-	const char *gfxstrings[] = {"Graphics: LOW", "Graphics: HIGH"};
+	const char *gfxstrings[] = {};
 
-	if (button(144, gfxstrings[fancygfx], WHITE)) {
+	if (button(144, fancygfx ? "Graphics: HIGH" : "Graphics: LOW", WHITE)) {
 		fancygfx = !fancygfx;
 		PlaySound(selectsound);
 	}

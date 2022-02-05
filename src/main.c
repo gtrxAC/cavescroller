@@ -80,7 +80,7 @@ int falltimer;
 Rectangle fallpos = {0, 0, 16, 16};
 #define FALLSPEED 300     // how fast spikes and health packs fall (pixels per second)
 #define MINFALLDELAY 100  // min/max amount of time between spike/health drops
-#define MAXFALLDELAY (700 - 50*difficulty)
+#define MAXFALLDELAY (600 - 50*difficulty)
 
 // _____________________________________________________________________________
 //
@@ -95,7 +95,7 @@ Font font;
 #define FONTSIZE 8
 
 #ifdef PLATFORM_DESKTOP
-	Image icon;
+	Image icon;  // Window icon, favicon (html) is used on web
 #endif
 
 const Color wallcolors[DIF_COUNT] = {
@@ -195,6 +195,12 @@ int main() {
 		ImageFormat(&icon, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
 		SetWindowIcon(icon);
 		UnloadImage(icon);
+
+		// high score storage must be initialized to 0, otherwise there will be garbage values
+		// this doesn't happen on web because localstorage is used instead
+		if (!FileExists("storage.data")) {
+			for (int i = 0; i < DIF_COUNT; i++) save(i, 0);
+		}
 	#endif
 
 	// ESC is used to go to the main menu, so unbind it from exiting the game

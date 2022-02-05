@@ -2,7 +2,6 @@
 
 [[ ! -e lib ]] && mkdir lib
 [[ ! -e lib/web ]] && mkdir lib/web
-[[ ! -e lib/linux ]] && mkdir lib/linux
 
 if [[ ! -e raylib ]]; then
 	if command -v git > /dev/null; then
@@ -30,9 +29,5 @@ source emsdk/emsdk_env.sh
 cd raylib/src
 make PLATFORM=PLATFORM_WEB || make PLATFORM=PLATFORM_WEB -e
 mv libraylib.a ../../lib/web
-make clean || make clean -e
-
-make || make -e
-mv libraylib.a ../../lib/linux
 make clean || make clean -e
 cd ../..

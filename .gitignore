@@ -53,8 +53,10 @@ dkms.conf
 
 .vscode/
 emsdk/
+w64devkit/
 raylib/
 lib/
+include/raylib.h
 
 cavescroller
 cavescroller.exe

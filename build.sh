@@ -7,6 +7,7 @@
 #  - Windows (w64devkit)     ./build.sh
 #  - Windows (cross compile) TARGET=Windows_NT ./build.sh
 #  - Web                     TARGET=Web ./build.sh
+#  - Android                 TARGET=Android ./build.sh
 #
 #  - Debug                   DEBUG=1 ./build.sh
 #  - Build and run           ./build.sh -r
@@ -15,7 +16,7 @@
 
 # Default build options, override options from the command line
 
-# Platform, one of Windows_NT, Linux, Web. Defaults to your OS.
+# Platform, one of Windows_NT, Linux, Web, Android. Defaults to your OS.
 [[ "$TARGET" = "" ]] && TARGET=`uname`
 
 # Executable name, extension is added depending on target platform.
@@ -35,23 +36,15 @@ DEBUGFLAGS="-O0 -g -Wall -Wextra -Wpedantic"
 TYPEFLAGS=$RELEASEFLAGS
 [[ "$DEBUG" != "" ]] && TYPEFLAGS=$DEBUGFLAGS
 
-[[ -e lib/$TARGET/libraylib.a ]] || ./setup.sh
+[[ -e lib/$TARGET ]] || ./setup.sh
 
 case "$TARGET" in
 	"Windows_NT")
-		if [[ `uname` != "Windows_NT" ]]; then
-			if ! command -v wine > /dev/null; then
-				echo "Wine is required for cross compilation."
-				exit 1
-			fi
-			wine w64devkit/bin/bash.exe -c "cd $(pwd) && PATH=Z:$(pwd)/w64devkit/bin\;\$PATH TARGET=Windows_NT ./build.sh"
-			exit
-		else 
-			CC="x86_64-w64-mingw32-gcc"
-			EXT=".exe"
-			PLATFORM="PLATFORM_DESKTOP"
-			TARGETFLAGS="-lopengl32 -lgdi32 -lwinmm -Wl,--subsystem,windows"
-		fi
+		# change i686 to x86_64 for 64-bit build
+		CC="i686-w64-mingw32-gcc"
+		EXT=".exe"
+		PLATFORM="PLATFORM_DESKTOP"
+		TARGETFLAGS="-lopengl32 -lgdi32 -lwinmm -Wl,--subsystem,windows"
 		;;
 
 	"Linux")
@@ -65,9 +58,12 @@ case "$TARGET" in
 		EXT=".html"
 		PLATFORM="PLATFORM_WEB"
 		TARGETFLAGS="-s ASYNCIFY -s USE_GLFW=3 -s TOTAL_MEMORY=67108864 -s FORCE_FILESYSTEM=1 --shell-file src/shell.html --preload-file assets"
-		cd emsdk
-		source emsdk_env.sh
-		cd ..
+		source emsdk/emsdk_env.sh
+		;;
+
+	"Android")
+		source android/build.sh
+		exit
 		;;
 
 	*)
@@ -90,14 +86,7 @@ $CC src/*.c -Iinclude -Llib/$TARGET -o $NAME$EXT \
 #
 if [[ "$1" = "-r" ]]; then
 	case "$TARGET" in
-		"Windows_NT")
-			if [[ `uname` = "Linux" ]]; then
-				wine $NAME$EXT
-			else
-				$NAME$EXT
-			fi
-			;;
-
+		"Windows_NT") ([[ `uname` = "Linux" ]] && wine $NAME$EXT) || $NAME$EXT;;
 		"Linux") ./$NAME;;
 		"Web") emrun index.html;;
 	esac

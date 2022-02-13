@@ -94,8 +94,15 @@ Sound death, splash, selectsound, healthsound, spikedrop, spikefall, countdown;
 Font font;
 #define FONTSIZE 8
 
+// Window icon, favicon (html) is used on Web and app icon on Android
 #ifdef PLATFORM_DESKTOP
-	Image icon;  // Window icon, favicon (html) is used on web
+	Image icon;
+#endif
+
+// App needs to be full screen on Android, easy way to center a 1:1 aspect ratio
+// game to a widescreen display is using a render texture
+#ifdef PLATFORM_ANDROID
+	RenderTexture androidrt;
 #endif
 
 const Color wallcolors[DIF_COUNT] = {
@@ -141,18 +148,22 @@ int gomsgtimer;
 // _____________________________________________________________________________
 //
 
-bool touchmode;
+#ifdef PLATFORM_ANDROID
+	bool touchmode = true;
+#else
+	bool touchmode = false;
+#endif
 
 int hiscores[DIF_COUNT];
-bool gothiscore;     // was a high score achieved last game? used in gameover screen
-bool hiscoreloaded;  // high scores are loaded only once from the savefile,
+bool gothiscore;     // Was a high score achieved last game? Used in gameover screen
+bool hiscoreloaded;  // High scores are loaded only once from the savefile,
                      // this is a flag to prevent loading save file every frame
 
 int world[WIDTH/3][2]; // [0] is height, [1] is color tint (higher = darker)
                        // we use width/3 instead of width/blocksize because
                        // blocksize depends on control mode
 
-#define BLOCKSIZE (3 + touchmode)    // the map scrolls one block per frame, so higher blocksize is faster
+#define BLOCKSIZE (3 + touchmode)    // The map scrolls one block per frame, so higher blocksize is faster
 #define WORLDSIZE (WIDTH/BLOCKSIZE)
 
 enum {
@@ -172,12 +183,69 @@ enum {
 	DrawTextEx(font, text, (Vector2) {x, y}, FONTSIZE, 0, color); \
 }
 
+#ifdef PLATFORM_ANDROID
+	// GetTouchPosition() returns values from 0.0 (left/top) to 1.0 (right/bottom)
+	// Also we need to offset the X correctly because the game screen is centered
+	#define INPUTX ((int) (GetTouchPosition(0).x*GetScreenWidth() - GetScreenWidth()/2 + WIDTH*SCALE/2)/SCALE)
+	#define INPUTY ((int) (GetTouchPosition(0).y*HEIGHT))
+#else
 #define INPUTX (GetTouchX()/SCALE)  // GetTouchX also works for mouse, but doesn't work with SetMouseScale
 #define INPUTY (GetTouchY()/SCALE)
+#endif
 
 // _____________________________________________________________________________
 //
-//  Startup and top level main loop
+//  Loading assets
+// _____________________________________________________________________________
+//
+
+void init(void) {
+	// Android uses assets/ as the base directory for loading assets
+	// On other platforms it's the working directory, usually the folder where
+	// the game executable is located
+	#ifndef PLATFORM_ANDROID
+		ChangeDirectory("assets");
+	#endif
+
+	buttons[0] = LoadTexture("button0.png");
+	buttons[1] = LoadTexture("button1.png");
+	buttons[2] = LoadTexture("button2.png");
+	playertex[DIF_EASY] = LoadTexture("playereasy.png");
+	playertex[DIF_NORMAL] = LoadTexture("player.png");
+	playertex[DIF_HARD] = LoadTexture("playerhard.png");
+
+	title = LoadTexture("title.png");
+	gameover = LoadTexture("gameover.png");
+	spike = LoadTexture("spike.png");
+	health = LoadTexture("health.png");
+	scanline = LoadTexture("scanline.png");
+
+	death = LoadSound("death.wav");
+	selectsound = LoadSound("select.wav");
+	healthsound = LoadSound("health.wav");
+	spikedrop = LoadSound("spikedrop.wav");
+	spikefall = LoadSound("spikefall.wav");
+	splash = LoadSound("splash.wav");
+	countdown = LoadSound("countdown.wav");
+
+	font = LoadFontEx("font.ttf", 8, NULL, 0);
+
+	#ifndef PLATFORM_ANDROID
+		ChangeDirectory("..");
+	#endif
+
+	space = TITLESPACE;
+	delta = TITLEDELTA;
+	worldinit();
+
+	hiscores[DIF_EASY] = load(DIF_EASY);
+	hiscores[DIF_NORMAL] = load(DIF_NORMAL);
+	hiscores[DIF_HARD] = load(DIF_HARD);
+}
+
+// _____________________________________________________________________________
+//
+//  Startup
 // _____________________________________________________________________________
 //
 
@@ -188,7 +256,14 @@ int main() {
 	mindelta = mindeltas[difficulty];
 	maxdelta = maxdeltas[difficulty];
 
-	InitWindow(WIDTH*SCALE, HEIGHT*SCALE, "CaveScroller");
+	// Fill entire screen on Android, otherwise there will be flashing borders
+	// Also window title is ignored on Android, the app name is used instead
+	#ifdef PLATFORM_ANDROID
+		InitWindow(0, 0, "");
+		androidrt = LoadRenderTexture(WIDTH*SCALE, HEIGHT*SCALE);
+	#else
+		InitWindow(WIDTH*SCALE, HEIGHT*SCALE, "CaveScroller");
+	#endif
 
 	#ifdef PLATFORM_DESKTOP
 		icon = LoadImage("assets/icon.png");
@@ -224,6 +299,12 @@ int main() {
 	return 0;
 }
 
+// _____________________________________________________________________________
+//
+//  Main loop
+// _____________________________________________________________________________
+//
+
 void mainloop(void) {
 	update();
 
@@ -231,7 +312,11 @@ void mainloop(void) {
 	draw();
 	EndTextureMode();
 
-	BeginDrawing();
+	#ifdef PLATFORM_ANDROID
+		BeginTextureMode(androidrt);
+	#else
+		BeginDrawing();
+	#endif
 
 	// note: this call would have to be rewritten if changing screen size (not scale) or startanim length
 	DrawTexturePro(
@@ -283,6 +368,19 @@ void mainloop(void) {
 		if (playerrotation > 0) playerrotation--;
 		else if (playerrotation < 0) playerrotation++;
 	}
+
+	#ifdef PLATFORM_ANDROID
+		EndTextureMode();
+
+		BeginDrawing();
+		ClearBackground(BLACK);
+		DrawTexturePro(
+			androidrt.texture,
+			(Rectangle) {0, 0, WIDTH*SCALE, -HEIGHT*SCALE},
+			(Rectangle) {GetScreenWidth()/2 - WIDTH*SCALE/2, 0, GetScreenHeight(), GetScreenHeight()},
+			(Vector2) {0, 0}, 0.0f, WHITE
+		);
+	#endif
 
 	EndDrawing();
 	framecount++;
@@ -342,7 +440,7 @@ bool link(int x, int y, const char *text, Color tint) {
 
 // _____________________________________________________________________________
 //
-//  Main update and draw loops (these branch off depending on game state)
+//  Update and draw loops (these branch off depending on game state)
 // _____________________________________________________________________________
 //
 
@@ -377,45 +475,6 @@ void draw(void) {
 		case ST_OPTIONS: draw_options(); break;
 		case ST_STARTING: draw_starting(); break;
 	}
-}
-
-// _____________________________________________________________________________
-//
-//  Loading assets
-// _____________________________________________________________________________
-//
-
-void init(void) {
-	buttons[0] = LoadTexture("assets/button0.png");
-	buttons[1] = LoadTexture("assets/button1.png");
-	buttons[2] = LoadTexture("assets/button2.png");
-	playertex[DIF_EASY] = LoadTexture("assets/playereasy.png");
-	playertex[DIF_NORMAL] = LoadTexture("assets/player.png");
-	playertex[DIF_HARD] = LoadTexture("assets/playerhard.png");
-
-	title = LoadTexture("assets/title.png");
-	gameover = LoadTexture("assets/gameover.png");
-	spike = LoadTexture("assets/spike.png");
-	health = LoadTexture("assets/health.png");
-	scanline = LoadTexture("assets/scanline.png");
-
-	death = LoadSound("assets/death.wav");
-	selectsound = LoadSound("assets/select.wav");
-	healthsound = LoadSound("assets/health.wav");
-	spikedrop = LoadSound("assets/spikedrop.wav");
-	spikefall = LoadSound("assets/spikefall.wav");
-	splash = LoadSound("assets/splash.wav");
-	countdown = LoadSound("assets/countdown.wav");
-
-	font = LoadFontEx("assets/font.ttf", 8, NULL, 0);
-
-	space = TITLESPACE;
-	delta = TITLEDELTA;
-	worldinit();
-
-	hiscores[DIF_EASY] = load(DIF_EASY);
-	hiscores[DIF_NORMAL] = load(DIF_NORMAL);
-	hiscores[DIF_HARD] = load(DIF_HARD);
 }
 
 // _____________________________________________________________________________
@@ -799,9 +858,14 @@ void draw_options(void) {
 	drawtext("the player speed", WIDTH/2 - 64, 24, WHITE);
 
 	drawtext("HIGH SCORES", WIDTH/2 - 44, 40, GXYELLOW);
-	drawtext(TextFormat("EASY:   %.5d", hiscores[DIF_EASY]), WIDTH/2 - 52, 48, ((Color) {0, 255, 64, 255}));
-	drawtext(TextFormat("NORMAL: %.5d", hiscores[DIF_NORMAL]), WIDTH/2 - 52, 56, GXYELLOW);
-	drawtext(TextFormat("HARD:   %.5d", hiscores[DIF_HARD]), WIDTH/2 - 52, 64, ((Color) {255, 0, 48, 255}));
+	
+	#ifdef PLATFORM_ANDROID
+		drawtext("Not supported yet", WIDTH/2 - 68, 48, WHITE);
+	#else
+		drawtext(TextFormat("EASY:   %.5d", hiscores[DIF_EASY]), WIDTH/2 - 52, 48, ((Color) {0, 255, 64, 255}));
+		drawtext(TextFormat("NORMAL: %.5d", hiscores[DIF_NORMAL]), WIDTH/2 - 52, 56, GXYELLOW);
+		drawtext(TextFormat("HARD:   %.5d", hiscores[DIF_HARD]), WIDTH/2 - 52, 64, ((Color) {255, 0, 48, 255}));
+	#endif
 
 	const char *difstrings[] = {"Difficulty: EASY", "Difficulty: NORMAL", "Difficulty: HARD"};
 
@@ -823,8 +887,6 @@ void draw_options(void) {
 		PlaySound(selectsound);
 	}
 
-	const char *gfxstrings[] = {};
-
 	if (button(144, fancygfx ? "Graphics: HIGH" : "Graphics: LOW", WHITE)) {
 		fancygfx = !fancygfx;
 		PlaySound(selectsound);
@@ -838,26 +900,28 @@ void draw_options(void) {
 		PlaySound(selectsound);
 	}
 
-	if (link(0, 224, "Copy scores", LINKCOLOR)) {
-		const char *str = TextFormat(
-			"My CaveScroller high scores\nEASY: %.5d\nNORMAL: %.5d\nHARD: %.5d",
-			hiscores[DIF_EASY], hiscores[DIF_NORMAL], hiscores[DIF_HARD]
-		);
+	#ifndef PLATFORM_ANDROID
+		if (link(0, 224, "Copy scores", LINKCOLOR)) {
+			const char *str = TextFormat(
+				"My CaveScroller high scores\nEASY: %.5d\nNORMAL: %.5d\nHARD: %.5d",
+				hiscores[DIF_EASY], hiscores[DIF_NORMAL], hiscores[DIF_HARD]
+			);
 
-		#ifdef PLATFORM_WEB
-			emscripten_run_script(TextFormat("navigator.clipboard.writeText(`%s`); alert('Copied!');", str));
-		#else
-			SetClipboardText(str); printf("Copied scores to clipboard!\n");
-		#endif
-	}
-	drawtext("___________", 0, 226, LINKCOLOR);
+			#ifdef PLATFORM_WEB
+				emscripten_run_script(TextFormat("navigator.clipboard.writeText(`%s`); alert('Copied!');", str));
+			#else
+				SetClipboardText(str); printf("Copied scores to clipboard!\n");
+			#endif
+		}
+		drawtext("___________", 0, 226, LINKCOLOR);
 
-	if (link(96, 224, "Clear scores", LINKCOLOR)) {
-		save(DIF_EASY, 0); hiscores[DIF_EASY] = 0;
-		save(DIF_NORMAL, 0); hiscores[DIF_NORMAL] = 0;
-		save(DIF_HARD, 0); hiscores[DIF_HARD] = 0;
-	}
-	drawtext("____________", 96, 226, LINKCOLOR);
+		if (link(96, 224, "Clear scores", LINKCOLOR)) {
+			save(DIF_EASY, 0); hiscores[DIF_EASY] = 0;
+			save(DIF_NORMAL, 0); hiscores[DIF_NORMAL] = 0;
+			save(DIF_HARD, 0); hiscores[DIF_HARD] = 0;
+		}
+		drawtext("____________", 96, 226, LINKCOLOR);
+	#endif
 
 	if (touchmode) {
 		if (link(200, 224, "Debug", LINKCOLOR)) debug = !debug;

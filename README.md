@@ -32,11 +32,10 @@ There are two control modes: keyboard mode and touch mode. Touch mode also works
 4. Run `./setup.sh` to build raylib.
 5. Run `./build.sh` to compile the game.
 
-#### Cross compiling for Windows
-1. Download [Wine](https://wiki.winehq.org/Download). It must be available in your path, type `wine` into a terminal to test.
+### Cross compiling for Windows
+1. Install `mingw-w64` using your package manager. Make sure `x86_64-w64-mingw32-gcc` is available from your command line.
 2. Run `TARGET=Windows_NT ./setup.sh` to build raylib.
-3. There may be some errors, but if you got a `lib/Windows_NT/libraylib.a` file, you can ignore them.
-4. Run `TARGET=Windows_NT ./build.sh` to compile the game.
+3. Run `TARGET=Windows_NT ./build.sh` to compile the game. 
 
 ### Linux
 1. Run `./setup.sh` to build raylib.
@@ -47,6 +46,12 @@ Web building has only been tested on Linux. It should work on Windows without an
 1. If you're on Windows, follow the first 3 steps of the Windows building guide.
 2. Run `TARGET=Web ./setup.sh` to build raylib.
 3. Run `TARGET=Web ./build.sh -r` to compile and run the game. Opening the `index.html` won't work, a web server is needed and `-r` launches one.
+
+### Android
+1. Install [Java](https://openjdk.java.net/) if you haven't already. Make sure `JAVA` in your [`android/config.sh`](android/config.sh) points to the Java installation. If you're on Linux and installed Java through the package manager, you don't need to change the config.sh.
+2. Run `TARGET=Android ./setup.sh` to install the SDK/NDK and build raylib. If you already have an SDK/NDK installation, you can set the paths to them in [`android/config.sh`](android/config.sh).
+3. Run `TARGET=Android ./build.sh` to compile the game.
+4. If you have a device with USB debugging enabled, it will try to install the APK on it. You can also transfer `cavescroller.apk` to the device and install it from a file manager.
 
 ## Credits
 * Font: [IBM PC BIOS 8×8](https://int10h.org/oldschool-pc-fonts/fontlist/font?ibm_bios), (c) 2016-2020 VileR

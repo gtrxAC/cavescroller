@@ -52,6 +52,9 @@ Mkfile.old
 dkms.conf
 
 .vscode/
+android/[ns]dk
+android/build
+android/*.keystore
 emsdk/
 w64devkit/
 raylib/
@@ -59,9 +62,10 @@ lib/
 include/raylib.h
 
 cavescroller
-cavescroller.exe
 index.html
 *.js
 *.wasm
 *.data
 *.zip
+*.apk
+*.exe

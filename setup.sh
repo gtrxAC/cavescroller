@@ -7,17 +7,15 @@
 #  - Windows (w64devkit)     ./setup.sh
 #  - Windows (cross compile) TARGET=Windows_NT ./setup.sh
 #  - Web                     TARGET=Web ./setup.sh
+#  - Android                 TARGET=Android ./setup.sh
 # ______________________________________________________________________________
 #
 
+# Default to host platform
 [[ "$TARGET" = "" ]] && TARGET=`uname`
 
 # Set up directory structure
-[[ -e include ]] || mkdir include
-[[ -e src ]] || mkdir src
-[[ -e lib ]] || mkdir lib
-[[ -e assets ]] || mkdir assets
-[[ -e lib/$TARGET ]] || mkdir lib/$TARGET
+mkdir -p include src lib assets lib/$TARGET
 
 # ______________________________________________________________________________
 #
@@ -55,27 +53,25 @@ case "$TARGET" in
 		;;
 
 	"Windows_NT")
-		if [[ `uname` = "Linux" ]]; then
-			if ! command -v wine > /dev/null; then
-				echo "Wine is required for cross compilation."
-				exit 1
-			fi
-
-			if [[ ! -e w64devkit ]]; then
-				wget https://github.com/skeeto/w64devkit/releases/download/v1.10.0/w64devkit-1.10.0.zip
-				unzip w64devkit-*.zip
-				rm w64devkit-*.zip
-			fi
-
-			wine w64devkit/bin/bash.exe -c \
-				"cd $(pwd) && PATH=Z:$(pwd)/w64devkit/bin\;\$PATH TARGET=Windows_NT ./setup.sh"
-		else
+		# Works on Windows (w64devkit) and Linux (mingw-w64)
+		# Targets 32-bit by default, change i686 to x86_64 for 64-bit build
+		if command -v i686-w64-mingw32-gcc > /dev/null; then
 			cd raylib/src
-			mingw32-make || mingw32-make -e
+			make CC=i686-w64-mingw32-gcc AR=i686-w64-mingw32-ar OS=Windows_NT || \
+			make CC=i686-w64-mingw32-gcc AR=i686-w64-mingw32-ar OS=Windows_NT -e
 			mv libraylib.a ../../lib/$TARGET
 			cp raylib.h ../../include
-			mingw32-make clean || mingw32-make clean -e || rm -v *.o
+			make clean || make clean -e || rm -v *.o
 			cd ../..
+		else
+			if command -v apt > /dev/null; then
+				sudo apt install mingw-w64
+				source setup.sh
+				exit
+			else
+				echo "Please install mingw-w64 using your package manager"
+				exit 1
+			fi
 		fi
 		;;
 
@@ -102,6 +98,11 @@ case "$TARGET" in
 		cp raylib.h ../../include
 		make clean || make clean -e || rm -v *.o
 		cd ../..
+		;;
+
+	"Android")
+		source android/setup.sh
+		exit
 		;;
 
 	*)

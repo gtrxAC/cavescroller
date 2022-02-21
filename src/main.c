@@ -41,8 +41,8 @@ void draw_starting(void);
 
 //                       easy norm hard
 const int speeds[]    = {115, 135, 145};  // speed is how fast WASD moves the player, not the scroll speed (pixels per second)
-const int minspaces[] = {82,  78,  75};   // min amount of empty space, below 75 is very hard
-const int maxspaces[] = {110, 95,  90};   // max (starting) amount of empty space, decreases every SPACEDEC frames until minspace
+const int minspaces[] = {80,  77,  74};   // min amount of empty space, below 75 is very hard
+const int maxspaces[] = {105, 90,  87};   // max (starting) amount of empty space, decreases every SPACEDEC frames until minspace
 const int mindeltas[] = {6,   6,   7};    // minimum (starting) delta (how steep and rough the cave is), increases every DELTAINC frames
 const int maxdeltas[] = {8,   8,   8};    // maximum delta, anything above 9 is quite unplayable
 #define SPACEDEC 300
@@ -154,6 +154,8 @@ int gomsgtimer;
 	bool touchmode = false;
 #endif
 
+bool shouldclose = false;  // Should the game close next frame? (if back button pressed)
+
 int hiscores[DIF_COUNT];
 bool gothiscore;     // Was a high score achieved last game? Used in gameover screen
 bool hiscoreloaded;  // High scores are loaded only once from the savefile,
@@ -189,8 +191,8 @@ enum {
 	#define INPUTX ((int) (GetTouchPosition(0).x*GetScreenWidth() - GetScreenWidth()/2 + WIDTH*SCALE/2)/SCALE)
 	#define INPUTY ((int) (GetTouchPosition(0).y*HEIGHT))
 #else
-#define INPUTX (GetTouchX()/SCALE)  // GetTouchX also works for mouse, but doesn't work with SetMouseScale
-#define INPUTY (GetTouchY()/SCALE)
+	#define INPUTX (GetTouchX()/SCALE)  // GetTouchX also works for mouse, but doesn't work with SetMouseScale
+	#define INPUTY (GetTouchY()/SCALE)
 #endif
 
 // _____________________________________________________________________________
@@ -291,7 +293,7 @@ int main() {
 	#ifdef PLATFORM_WEB
 		emscripten_set_main_loop(mainloop, 60, 1);  // setting fps (2nd arg) to 60 here still gives me 62fps
 	#else
-		while (!WindowShouldClose()) mainloop();
+		while (!WindowShouldClose() && !shouldclose) mainloop();
 	#endif
 
 	CloseAudioDevice();
@@ -463,6 +465,13 @@ void update(void) {
 		worldinit();
 	}
 	if (IsKeyPressed(KEY_B)) debug = !debug;
+
+	#ifdef PLATFORM_ANDROID
+		if (IsKeyPressed(KEY_BACK)) {
+			if (state == ST_TITLE) shouldclose = true;
+			else state = ST_TITLE;
+		}
+	#endif
 }
 
 void draw(void) {

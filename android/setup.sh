@@ -2,7 +2,7 @@
 # ______________________________________________________________________________
 #
 #  Set up raylib project for Android
-#  Note: this script is executed by setup.sh when TARGET=Android is specified
+#  Note: this script is sourced by setup.sh when TARGET=Android is specified
 # ______________________________________________________________________________
 #
 source android/config.sh
@@ -46,7 +46,7 @@ unzip android-ndk
 # ______________________________________________________________________________
 #
 cd ../../../raylib/src
-for ABI in armeabi-v7a arm64-v8a x86 x86_64; do
+for ABI in $ABIS; do
 	case "$ABI" in
 		"armeabi-v7a") ARCH="arm";;
 		"arm64-v8a") ARCH="arm64";;
@@ -61,7 +61,7 @@ for ABI in armeabi-v7a arm64-v8a x86 x86_64; do
 
 	mv libraylib.a ../../lib/$TARGET/$ABI/libraylib.a
 	cp raylib.h ../../include
-	make clean || make clean -e || rm -v *.o
+	make clean || make clean -e || rm -fv *.o
 done
 cd ../..
 
@@ -95,7 +95,7 @@ echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>"                               
 echo "<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\""                                      >> AndroidManifest.xml
 echo "        package=\"com.$DEV_NAME.$PKG_NAME\""                                                                 >> AndroidManifest.xml
 echo "        android:versionCode=\"$VERSION_CODE\" android:versionName=\"$VERSION_NAME\" >"                       >> AndroidManifest.xml
-echo "    <uses-sdk android:minSdkVersion=\"16\" android:targetSdkVersion=\"$API_VERSION\"/>"                      >> AndroidManifest.xml
+echo "    <uses-sdk android:minSdkVersion=\"$MIN_API_VERSION\" android:targetSdkVersion=\"$API_VERSION\"/>"        >> AndroidManifest.xml
 echo "    <uses-feature android:glEsVersion=\"0x00020000\" android:required=\"true\"/>"                            >> AndroidManifest.xml
 echo "    <uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\"/>"                           >> AndroidManifest.xml
 echo "    <application android:allowBackup=\"false\" android:label=\"$APP_NAME\" android:icon=\"@drawable/icon\">" >> AndroidManifest.xml

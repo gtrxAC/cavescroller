@@ -1,30 +1,43 @@
-# What Android API version to target (raylib requires at least 16)
-API_VERSION=29
+#!/bin/sh
+# ______________________________________________________________________________
+#
+#  Build options for Android
+#  Note: this script is sourced by android/setup.sh or android/build.sh
+# ______________________________________________________________________________
+#
+# What Android API version to target
+# Newer API versions don't seem to work for Android 5.1 and below
+_ API_VERSION 31
+_ MIN_API_VERSION 23
 
 # The developer and package name: com.$DEV_NAME.$PKG_NAME
-DEV_NAME=gtrxac
-PKG_NAME=cavescroller
+# Only one app with the same developer and package name can be installed at a time
+_ DEV_NAME gtrxac
+_ PKG_NAME cavescroller
 
 # The name of the app shown in the launcher
-APP_NAME=CaveScroller
+_ APP_NAME CaveScroller
 
 # App version, version code should be incremented by 1 and version name is the
 # human readable version
-VERSION_CODE=2
-VERSION_NAME=1.0.1
+_ VERSION_CODE 1
+_ VERSION_NAME 1.0
 
 # portrait or landscape
-SCREEN_ORIENTATION=landscape
+_ SCREEN_ORIENTATION landscape
 
 # What architectures to build for
-ABIS="armeabi-v7a arm64-v8a x86 x86_64"
+# arm64-v8a doesn't work but armeabi-v7a will work fine for 64-bit too
+# error: 'aarch64': unable to pass LLVM bit-code files to linker
+_ ABIS "armeabi-v7a x86 x86_64"
 
-SDK=$(pwd)/android/sdk/`uname`
-NDK=$(pwd)/android/ndk/`uname`/android-ndk-r23b
-JAVA=/usr/lib/jvm/default-java  # Change this if you're not on Linux or you installed Java somewhere else
-BUILD=$(pwd)/android/build
+# Change the Java path if you're not on Linux or you installed Java somewhere else
+_ SDK $(pwd)/android/sdk/`uname`
+_ NDK $(pwd)/android/ndk/`uname`/android-ndk-r23b
+_ JAVA /usr/lib/jvm/default-java
+_ BUILD $(pwd)/android/build
 
-BUILD_TOOLS=$SDK/build-tools/29.0.3
-TOOLCHAIN=$NDK/toolchains/llvm/prebuilt/linux-x86_64
-NATIVE_APP_GLUE=$NDK/sources/android/native_app_glue
-AR=$TOOLCHAIN/bin/llvm-ar
+_ BUILD_TOOLS $SDK/build-tools/29.0.3
+_ TOOLCHAIN $NDK/toolchains/llvm/prebuilt/linux-x86_64
+_ NATIVE_APP_GLUE $NDK/sources/android/native_app_glue
+_ AR $TOOLCHAIN/bin/llvm-ar

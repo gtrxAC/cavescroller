@@ -1,6 +1,10 @@
 #!/bin/sh
-# Note: this script should be sourced from the main build.sh script
-
+# ______________________________________________________________________________
+#
+#  Compile raylib project for Android
+#  Note: this script is sourced by build.sh when TARGET=Android is specified
+# ______________________________________________________________________________
+#
 source android/config.sh
 
 CFLAGS="-ffunction-sections -funwind-tables -fstack-protector-strong -fPIC -Wall \
@@ -49,19 +53,19 @@ for ABI in $ABIS; do
 	# Compile native app glue
 	# .c -> .o
 	$CC -c $NATIVE_APP_GLUE/android_native_app_glue.c -o $NATIVE_APP_GLUE/native_app_glue.o \
-		$INCLUDES -I$TOOLCHAIN/sysroot/usr/include/$CCTYPE $CFLAGS $ABICFLAGS $TOOLCHAIN/sysroot
+		$INCLUDES -I$TOOLCHAIN/sysroot/usr/include/$CCTYPE $CFLAGS $ABICFLAGS
 
 	# .o -> .a
 	$AR rcs lib/$TARGET/$ABI/libnative_app_glue.a $NATIVE_APP_GLUE/native_app_glue.o
 
 	# Compile project
 	# FLAGS and TYPEFLAGS are from the main build script which sources this one
-	$CC src/*.c -o $BUILD/lib/$ABI/libmain.so -shared -v \
+	$CC src/*.c -o $BUILD/lib/$ABI/libmain.so -shared \
 		$INCLUDES -I$TOOLCHAIN/sysroot/usr/include/$CCTYPE $FLAGS $TYPEFLAGS $CFLAGS $ABICFLAGS \
 		-Wl,-soname,libmain.so -Wl,--exclude-libs,libatomic.a -Wl,--build-id \
 		-Wl,--no-undefined -Wl,-z,noexecstack -Wl,-z,relro -Wl,-z,now \
 		-Wl,--warn-shared-textrel -Wl,--fatal-warnings -u ANativeActivity_onCreate \
-		-L. -L$BUILD/obj -L/home/gtrx/cavescroller/lib/$TARGET/$ABI \
+		-L. -L$BUILD/obj -Llib/$TARGET/$ABI \
 		-lraylib -lnative_app_glue -llog -landroid -lEGL -lGLESv2 -lOpenSLES -latomic -lc -lm -ldl
 done
 
